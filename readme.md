@@ -14,7 +14,7 @@ Demo Mongo Sharded Cluster with Docker Compose
 	* `shard03-a`,`shard03-b`, `shard03-c`
 * 2 Routers (mongos): `router01`, `router02`
 
-<img src="https://raw.githubusercontent.com/kuwar/cbnn/master/images/sharding-and-replica-sets-architecture.png" style="width: 100%;" />
+<img src="https://raw.githubusercontent.com/kuwar/cbbn/master/images/sharding-and-replica-sets-architecture.png" style="width: 100%;" />
 
 ### Setup
 - **Step 1: Start all of the containers**
