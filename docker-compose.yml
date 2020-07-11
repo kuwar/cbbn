@@ -1,6 +1,26 @@
 version: '2'
 services:
 
+  ## APP
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: flask_app
+    restart: unless-stopped
+    ports:
+      - 8080:8080
+    environment:
+      APP_ENV: "development"
+      APP_DEBUG: "True"
+      APP_PORT: 8080
+      MONGODB_DATABASE: cbbn
+      MONGODB_HOSTNAME: router01
+    volumes:
+      - ./modules:/srv/app
+    depends_on:
+      - router01
+
   ## Router
   router01:
     image: mongo:4.2.8

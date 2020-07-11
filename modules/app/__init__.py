@@ -8,7 +8,7 @@ from flask_pymongo import PyMongo
 
 os.environ['ENV'] = 'development'
 os.environ['PORT'] = '8080'
-os.environ['DB'] = 'mongodb://127.0.0.1:27017/cbbn'
+os.environ['DB'] = 'router01://router01:27017/cbbn'
 os.environ['ENV'] = 'ENV'
 os.environ['ENV'] = 'ENV'
 
