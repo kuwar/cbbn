@@ -359,5 +359,5 @@ Execute the **First Run** instructions again.
 <img src="https://raw.githubusercontent.com/kuwar/cbbn/master/images/containers.png" style="width: 100%;" />
 <img src="https://raw.githubusercontent.com/kuwar/cbbn/master/images/enable-shard-db-n-collection.png" style="width: 100%;" />
 <img src="https://raw.githubusercontent.com/kuwar/cbbn/master/images/shard-status.png" style="width: 100%;" />
-<img src="https://raw.githubusercontent.com/kuwar/cbbn/master/images/sharding-and-replica-sets-architecture.png" style="width: 100%;" />
+<img src="https://raw.githubusercontent.com/kuwar/cbbn/master/images/data-sharding-n-replication.png" style="width: 100%;" />
 
