@@ -14,7 +14,7 @@ Demo Mongo Sharded Cluster with Docker Compose
 	* `shard03-a`,`shard03-b`, `shard03-c`
 * 2 Routers (mongos): `router01`, `router02`
 
-<img src="https://raw.githubusercontent.com/minhhungit/mongodb-cluster-docker-compose/master/images/sharding-and-replica-sets.png" style="width: 100%;" />
+<img src="https://raw.githubusercontent.com/kuwar/cbnn/master/images/sharding-and-replica-sets-architecture.png" style="width: 100%;" />
 
 ### Setup
 - **Step 1: Start all of the containers**
@@ -356,8 +356,8 @@ Execute the **First Run** instructions again.
 
 ### Screenshot
 
-<img src="https://raw.githubusercontent.com/minhhungit/mongodb-cluster-docker-compose/master/images/demo.png" style="width: 100%;" />
-<img src="https://raw.githubusercontent.com/minhhungit/mongodb-cluster-docker-compose/master/images/demo-03.png" style="width: 100%;" />
-<img src="https://raw.githubusercontent.com/minhhungit/mongodb-cluster-docker-compose/master/images/demo-02.png" style="width: 100%;" />
-<img src="https://raw.githubusercontent.com/minhhungit/mongodb-cluster-docker-compose/master/images/replicaset-shard-01.png" style="width: 100%;" />
+<img src="https://raw.githubusercontent.com/kuwar/cbbn/master/images/containers.png" style="width: 100%;" />
+<img src="https://raw.githubusercontent.com/kuwar/cbbn/master/images/enable-shard-db-n-collection.png" style="width: 100%;" />
+<img src="https://raw.githubusercontent.com/kuwar/cbbn/master/images/shard-status.png" style="width: 100%;" />
+<img src="https://raw.githubusercontent.com/kuwar/cbbn/master/images/sharding-and-replica-sets-architecture.png" style="width: 100%;" />
 
