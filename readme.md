@@ -1,26 +1,11 @@
 Demo Mongo Sharded Cluster with Docker Compose
 =========================================
 
-### PSS Style (Primary -Secondary - Secondary)
-
-Need PSA? Check [here](https://github.com/minhhungit/mongodb-cluster-docker-compose/tree/master/PSA)
-
+### WARNING
+> It is only Tested on Linux (Ubuntu 20.04)
 ---
 
-### WARNING (Windows & OS X) 
-
->The default Docker setup on Windows and OS X uses a VirtualBox VM to host the Docker daemon. 
->Unfortunately, the mechanism VirtualBox uses to share folders between the host system and 
->the Docker container is not compatible with the memory mapped files used by MongoDB 
->(see [vbox bug](https://www.virtualbox.org/ticket/819), [docs.mongodb.org](https://docs.mongodb.com/manual/administration/production->notes/#fsync-on-directories) 
->and related [jira.mongodb.org bug](https://jira.mongodb.org/browse/SERVER-8600)). 
->This means that it is not possible to run a MongoDB container with the data directory mapped to the host.
->
->&#8211; Docker Hub ([source here](https://github.com/docker-library/docs/blob/b78d49c9dffe5dd8b3ffd1db338c62b9e1fc3db8/mongo/content.md#where-to-store-data) 
->or [here](https://github.com/docker-library/mongo/issues/232#issuecomment-355423692))
----
-
-### Mongo Components
+### Mongo Components (Architecture)
 
 * Config Server (3 member replica set): `configsvr01`,`configsvr02`,`configsvr03`
 * 3 Shards (each a 3 member `PSS` replica set):
@@ -38,7 +23,7 @@ Need PSA? Check [here](https://github.com/minhhungit/mongodb-cluster-docker-comp
 docker-compose up -d
 ```
 
-- **Step 2: Initialize the replica sets (config servers and shards) and routers**
+- **Step 2: Initialize the replica sets (config servers and shards)**
 
 ```bash
 docker-compose exec configsvr01 sh -c "mongo < /scripts/init-configserver.js"
@@ -59,15 +44,15 @@ docker-compose exec router01 sh -c "mongo < /scripts/init-router.js"
 ```bash
 docker-compose exec router01 mongo --port 27017
 
-// Enable sharding for database `MyDatabase`
-sh.enableSharding("MyDatabase")
+// Enable sharding for database `cbbn`
+sh.enableSharding("cbbn")
 
-// Setup shardingKey for collection `MyCollection`**
-db.adminCommand( { shardCollection: "MyDatabase.MyCollection", key: { supplierId: "hashed" } } )
+// Setup shardingKey for collection `users`**
+db.adminCommand( { shardCollection: "cbbn.users", key: { email: "hashed" } } )
 
 ```
 
->Done! but before you start inserting data you should verify them first
+> Done! but before you start inserting data you should verify them first
 
 ### Verify
 
@@ -79,72 +64,127 @@ sh.status()
 ```
 *Sample Result:*
 ```
+  mongos> sh.status()
+--- Sharding Status --- 
   sharding version: {
         "_id" : 1,
         "minCompatibleVersion" : 5,
         "currentVersion" : 6,
-        "clusterId" : ObjectId("5d38fb010eac1e03397c355a")
+        "clusterId" : ObjectId("5f096a9c588316a0c474afa6")
   }
   shards:
         {  "_id" : "rs-shard-01",  "host" : "rs-shard-01/shard01-a:27017,shard01-b:27017,shard01-c:27017",  "state" : 1 }
         {  "_id" : "rs-shard-02",  "host" : "rs-shard-02/shard02-a:27017,shard02-b:27017,shard02-c:27017",  "state" : 1 }
         {  "_id" : "rs-shard-03",  "host" : "rs-shard-03/shard03-a:27017,shard03-b:27017,shard03-c:27017",  "state" : 1 }
   active mongoses:
-        "4.0.10" : 2
+        "4.2.8" : 2
   autosplit:
         Currently enabled: yes
   balancer:
         Currently enabled:  yes
-        Currently running:  no
+        Currently running:  yes
         Failed balancer rounds in last 5 attempts:  0
-        Migration Results for the last 24 hours:
-                No recent migrations
+        Migration Results for the last 24 hours: 
+                268 : Success
   databases:
+        {  "_id" : "cbbn",  "primary" : "rs-shard-02",  "partitioned" : true,  "version" : {  "uuid" : UUID("b8b5dfd3-840a-42d0-8fe8-82fe3faf3643"),  "lastMod" : 1 } }
+                cbbn.users
+                        shard key: { "email" : "hashed" }
+                        unique: false
+                        balancing: true
+                        chunks:
+                                rs-shard-01     2
+                                rs-shard-02     2
+                                rs-shard-03     2
+                        { "email" : { "$minKey" : 1 } } -->> { "email" : NumberLong("-6148914691236517204") } on : rs-shard-01 Timestamp(1, 0) 
+                        { "email" : NumberLong("-6148914691236517204") } -->> { "email" : NumberLong("-3074457345618258602") } on : rs-shard-01 Timestamp(1, 1) 
+                        { "email" : NumberLong("-3074457345618258602") } -->> { "email" : NumberLong(0) } on : rs-shard-02 Timestamp(1, 2) 
+                        { "email" : NumberLong(0) } -->> { "email" : NumberLong("3074457345618258602") } on : rs-shard-02 Timestamp(1, 3) 
+                        { "email" : NumberLong("3074457345618258602") } -->> { "email" : NumberLong("6148914691236517204") } on : rs-shard-03 Timestamp(1, 4) 
+                        { "email" : NumberLong("6148914691236517204") } -->> { "email" : { "$maxKey" : 1 } } on : rs-shard-03 Timestamp(1, 5) 
+        {  "_id" : "cbnn",  "primary" : "rs-shard-02",  "partitioned" : true,  "version" : {  "uuid" : UUID("04dc80ec-7ab4-4400-8da8-e8b7adaf15d1"),  "lastMod" : 1 } }
         {  "_id" : "config",  "primary" : "config",  "partitioned" : true }
+                config.system.sessions
+                        shard key: { "_id" : 1 }
+                        unique: false
+                        balancing: true
+                        chunks:
+                                rs-shard-01     756
+                                rs-shard-02     134
+                                rs-shard-03     134
+                        too many chunks to print, use verbose if you want to force print
+
 ```
 
 - **Verify status of replica set for each shard**
 > You should see 1 PRIMARY, 2 SECONDARY
 
 ```bash
-docker exec -it rydell-shard-01-node-a bash -c "echo 'rs.status()' | mongo --port 27017" 
-docker exec -it rydell-shard-02-node-a bash -c "echo 'rs.status()' | mongo --port 27017" 
-docker exec -it rydell-shard-03-node-a bash -c "echo 'rs.status()' | mongo --port 27017" 
+docker exec -it cbbn-shard-01-node-a bash -c "echo 'rs.status()' | mongo --port 27017" 
+docker exec -it cbbn-shard-02-node-a bash -c "echo 'rs.status()' | mongo --port 27017" 
+docker exec -it cbbn-shard-03-node-a bash -c "echo 'rs.status()' | mongo --port 27017" 
 ```
 *Sample Result:*
 ```
-MongoDB shell version v4.0.11
-connecting to: mongodb://127.0.0.1:27017/?gssapiServiceName=mongodb
-Implicit session: session { "id" : UUID("dcfe5d8f-75ef-45f7-9595-9d72dc8a81fc") }
-MongoDB server version: 4.0.11
+kuwar@kuwar-Inspiron-5570:~/Documents/EPITA/MongoDB/cbbn$ docker exec -it cbbn-shard-01-node-a bash -c "echo 'rs.status()' | mongo --port 27017" 
+MongoDB shell version v4.2.8
+connecting to: mongodb://127.0.0.1:27017/?compressors=disabled&gssapiServiceName=mongodb
+Implicit session: session { "id" : UUID("0e0ecda5-39ef-479f-87b3-c91b7a235fcd") }
+MongoDB server version: 4.2.8
 {
         "set" : "rs-shard-01",
-        "date" : ISODate("2019-08-01T06:53:59.175Z"),
+        "date" : ISODate("2020-07-11T08:47:37.717Z"),
         "myState" : 1,
         "term" : NumberLong(1),
         "syncingTo" : "",
         "syncSourceHost" : "",
         "syncSourceId" : -1,
         "heartbeatIntervalMillis" : NumberLong(2000),
+        "majorityVoteCount" : 2,
+        "writeMajorityCount" : 2,
         "optimes" : {
                 "lastCommittedOpTime" : {
-                        "ts" : Timestamp(1564642438, 1),
+                        "ts" : Timestamp(1594457257, 1),
                         "t" : NumberLong(1)
                 },
+                "lastCommittedWallTime" : ISODate("2020-07-11T08:47:37.134Z"),
                 "readConcernMajorityOpTime" : {
-                        "ts" : Timestamp(1564642438, 1),
+                        "ts" : Timestamp(1594457257, 1),
                         "t" : NumberLong(1)
                 },
+                "readConcernMajorityWallTime" : ISODate("2020-07-11T08:47:37.134Z"),
                 "appliedOpTime" : {
-                        "ts" : Timestamp(1564642438, 1),
+                        "ts" : Timestamp(1594457257, 7),
                         "t" : NumberLong(1)
                 },
                 "durableOpTime" : {
-                        "ts" : Timestamp(1564642438, 1),
+                        "ts" : Timestamp(1594457257, 7),
                         "t" : NumberLong(1)
-                }
+                },
+                "lastAppliedWallTime" : ISODate("2020-07-11T08:47:37.138Z"),
+                "lastDurableWallTime" : ISODate("2020-07-11T08:47:37.138Z")
         },
-        "lastStableCheckpointTimestamp" : Timestamp(1564642428, 1),
+        "lastStableRecoveryTimestamp" : Timestamp(1594457229, 3),
+        "lastStableCheckpointTimestamp" : Timestamp(1594457229, 3),
+        "electionCandidateMetrics" : {
+                "lastElectionReason" : "electionTimeout",
+                "lastElectionDate" : ISODate("2020-07-11T08:03:57.560Z"),
+                "electionTerm" : NumberLong(1),
+                "lastCommittedOpTimeAtElection" : {
+                        "ts" : Timestamp(0, 0),
+                        "t" : NumberLong(-1)
+                },
+                "lastSeenOpTimeAtElection" : {
+                        "ts" : Timestamp(1594454626, 1),
+                        "t" : NumberLong(-1)
+                },
+                "numVotesNeeded" : 2,
+                "priorityAtElection" : 1,
+                "electionTimeoutMillis" : NumberLong(10000),
+                "numCatchUpOps" : NumberLong(0),
+                "newTermStartDate" : ISODate("2020-07-11T08:03:59.134Z"),
+                "wMajorityWriteAvailabilityDate" : ISODate("2020-07-11T08:04:01.856Z")
+        },
         "members" : [
                 {
                         "_id" : 0,
@@ -152,19 +192,19 @@ MongoDB server version: 4.0.11
                         "health" : 1,
                         "state" : 1,
                         "stateStr" : "PRIMARY",
-                        "uptime" : 390,
+                        "uptime" : 5028,
                         "optime" : {
-                                "ts" : Timestamp(1564642438, 1),
+                                "ts" : Timestamp(1594457257, 7),
                                 "t" : NumberLong(1)
                         },
-                        "optimeDate" : ISODate("2019-08-01T06:53:58Z"),
+                        "optimeDate" : ISODate("2020-07-11T08:47:37Z"),
                         "syncingTo" : "",
                         "syncSourceHost" : "",
                         "syncSourceId" : -1,
                         "infoMessage" : "",
-                        "electionTime" : Timestamp(1564642306, 1),
-                        "electionDate" : ISODate("2019-08-01T06:51:46Z"),
-                        "configVersion" : 2,
+                        "electionTime" : Timestamp(1594454637, 1),
+                        "electionDate" : ISODate("2020-07-11T08:03:57Z"),
+                        "configVersion" : 1,
                         "self" : true,
                         "lastHeartbeatMessage" : ""
                 },
@@ -174,26 +214,26 @@ MongoDB server version: 4.0.11
                         "health" : 1,
                         "state" : 2,
                         "stateStr" : "SECONDARY",
-                        "uptime" : 142,
+                        "uptime" : 2631,
                         "optime" : {
-                                "ts" : Timestamp(1564642428, 1),
+                                "ts" : Timestamp(1594457256, 4),
                                 "t" : NumberLong(1)
                         },
                         "optimeDurable" : {
-                                "ts" : Timestamp(1564642428, 1),
+                                "ts" : Timestamp(1594457256, 3),
                                 "t" : NumberLong(1)
                         },
-                        "optimeDate" : ISODate("2019-08-01T06:53:48Z"),
-                        "optimeDurableDate" : ISODate("2019-08-01T06:53:48Z"),
-                        "lastHeartbeat" : ISODate("2019-08-01T06:53:57.953Z"),
-                        "lastHeartbeatRecv" : ISODate("2019-08-01T06:53:57.967Z"),
+                        "optimeDate" : ISODate("2020-07-11T08:47:36Z"),
+                        "optimeDurableDate" : ISODate("2020-07-11T08:47:36Z"),
+                        "lastHeartbeat" : ISODate("2020-07-11T08:47:36.971Z"),
+                        "lastHeartbeatRecv" : ISODate("2020-07-11T08:47:36.971Z"),
                         "pingMs" : NumberLong(0),
                         "lastHeartbeatMessage" : "",
                         "syncingTo" : "shard01-a:27017",
                         "syncSourceHost" : "shard01-a:27017",
                         "syncSourceId" : 0,
                         "infoMessage" : "",
-                        "configVersion" : 2
+                        "configVersion" : 1
                 },
                 {
                         "_id" : 2,
@@ -201,144 +241,98 @@ MongoDB server version: 4.0.11
                         "health" : 1,
                         "state" : 2,
                         "stateStr" : "SECONDARY",
-                        "uptime" : 142,
+                        "uptime" : 2631,
                         "optime" : {
-                                "ts" : Timestamp(1564642428, 1),
+                                "ts" : Timestamp(1594457256, 6),
                                 "t" : NumberLong(1)
                         },
                         "optimeDurable" : {
-                                "ts" : Timestamp(1564642428, 1),
+                                "ts" : Timestamp(1594457256, 4),
                                 "t" : NumberLong(1)
                         },
-                        "optimeDate" : ISODate("2019-08-01T06:53:48Z"),
-                        "optimeDurableDate" : ISODate("2019-08-01T06:53:48Z"),
-                        "lastHeartbeat" : ISODate("2019-08-01T06:53:57.952Z"),
-                        "lastHeartbeatRecv" : ISODate("2019-08-01T06:53:57.968Z"),
+                        "optimeDate" : ISODate("2020-07-11T08:47:36Z"),
+                        "optimeDurableDate" : ISODate("2020-07-11T08:47:36Z"),
+                        "lastHeartbeat" : ISODate("2020-07-11T08:47:37.091Z"),
+                        "lastHeartbeatRecv" : ISODate("2020-07-11T08:47:37.532Z"),
                         "pingMs" : NumberLong(0),
                         "lastHeartbeatMessage" : "",
-                        "syncingTo" : "shard01-a:27017",
-                        "syncSourceHost" : "shard01-a:27017",
-                        "syncSourceId" : 0,
+                        "syncingTo" : "shard01-b:27017",
+                        "syncSourceHost" : "shard01-b:27017",
+                        "syncSourceId" : 1,
                         "infoMessage" : "",
-                        "configVersion" : 2
+                        "configVersion" : 1
                 }
         ],
         "ok" : 1,
-        "operationTime" : Timestamp(1564642438, 1),
         "$gleStats" : {
                 "lastOpTime" : Timestamp(0, 0),
                 "electionId" : ObjectId("7fffffff0000000000000001")
         },
-        "lastCommittedOpTime" : Timestamp(1564642438, 1),
+        "lastCommittedOpTime" : Timestamp(1594457257, 1),
         "$configServerState" : {
                 "opTime" : {
-                        "ts" : Timestamp(1564642426, 2),
+                        "ts" : Timestamp(1594457257, 8),
                         "t" : NumberLong(1)
                 }
         },
         "$clusterTime" : {
-                "clusterTime" : Timestamp(1564642438, 1),
+                "clusterTime" : Timestamp(1594457257, 14),
                 "signature" : {
                         "hash" : BinData(0,"AAAAAAAAAAAAAAAAAAAAAAAAAAA="),
                         "keyId" : NumberLong(0)
                 }
-        }
+        },
+        "operationTime" : Timestamp(1594457257, 7)
 }
 bye
+
 ```
 
 - **Check database status**
 ```bash
 docker-compose exec router01 mongo --port 27017
-use MyDatabase
+use cbbn
 db.stats()
-db.MyCollection.getShardDistribution()
+db.users.getShardDistribution()
 ```
 
 *Sample Result:*
 ```
-{
-        "raw" : {
-                "rs-shard-01/shard01-a:27017,shard01-b:27017,shard01-c:27017" : {
-                        "db" : "MyDatabase",
-                        "collections" : 1,
-                        "views" : 0,
-                        "objects" : 0,
-                        "avgObjSize" : 0,
-                        "dataSize" : 0,
-                        "storageSize" : 4096,
-                        "numExtents" : 0,
-                        "indexes" : 2,
-                        "indexSize" : 8192,
-                        "fsUsedSize" : 12439990272,
-                        "fsTotalSize" : 62725787648,
-                        "ok" : 1
-                },
-                "rs-shard-03/shard03-a:27017,shard03-b:27017,shard03-c:27017" : {
-                        "db" : "MyDatabase",
-                        "collections" : 1,
-                        "views" : 0,
-                        "objects" : 0,
-                        "avgObjSize" : 0,
-                        "dataSize" : 0,
-                        "storageSize" : 4096,
-                        "numExtents" : 0,
-                        "indexes" : 2,
-                        "indexSize" : 8192,
-                        "fsUsedSize" : 12439994368,
-                        "fsTotalSize" : 62725787648,
-                        "ok" : 1
-                },
-                "rs-shard-02/shard02-a:27017,shard02-b:27017,shard02-c:27017" : {
-                        "db" : "MyDatabase",
-                        "collections" : 1,
-                        "views" : 0,
-                        "objects" : 0,
-                        "avgObjSize" : 0,
-                        "dataSize" : 0,
-                        "storageSize" : 4096,
-                        "numExtents" : 0,
-                        "indexes" : 2,
-                        "indexSize" : 8192,
-                        "fsUsedSize" : 12439994368,
-                        "fsTotalSize" : 62725787648,
-                        "ok" : 1
-                }
-        },
-        "objects" : 0,
-        "avgObjSize" : 0,
-        "dataSize" : 0,
-        "storageSize" : 12288,
-        "numExtents" : 0,
-        "indexes" : 6,
-        "indexSize" : 24576,
-        "fileSize" : 0,
-        "extentFreeList" : {
-                "num" : 0,
-                "totalSize" : 0
-        },
-        "ok" : 1,
-        "operationTime" : Timestamp(1564004884, 36),
-        "$clusterTime" : {
-                "clusterTime" : Timestamp(1564004888, 1),
-                "signature" : {
-                        "hash" : BinData(0,"AAAAAAAAAAAAAAAAAAAAAAAAAAA="),
-                        "keyId" : NumberLong(0)
-                }
-        }
-}
+mongos> db.users.getShardDistribution()
+
+Shard rs-shard-03 at rs-shard-03/shard03-a:27017,shard03-b:27017,shard03-c:27017
+ data : 0B docs : 0 chunks : 2
+ estimated data per chunk : 0B
+ estimated docs per chunk : 0
+
+Shard rs-shard-02 at rs-shard-02/shard02-a:27017,shard02-b:27017,shard02-c:27017
+ data : 0B docs : 0 chunks : 2
+ estimated data per chunk : 0B
+ estimated docs per chunk : 0
+
+Shard rs-shard-01 at rs-shard-01/shard01-a:27017,shard01-b:27017,shard01-c:27017
+ data : 0B docs : 0 chunks : 2
+ estimated data per chunk : 0B
+ estimated docs per chunk : 0
+
+Totals
+ data : 0B docs : 0 chunks : 6
+ Shard rs-shard-03 contains 0% data, 0% docs in cluster, avg obj size on shard : 0B
+ Shard rs-shard-02 contains 0% data, 0% docs in cluster, avg obj size on shard : 0B
+ Shard rs-shard-01 contains 0% data, 0% docs in cluster, avg obj size on shard : 0B
+
 ```
 
 ### More commands
 
 ```bash
-docker exec -it rydell-mongo-config-01 bash -c "echo 'rs.status()' | mongo --port 27017"
+docker exec -it cbbn-mongo-config-01 bash -c "echo 'rs.status()' | mongo --port 27017"
 
 
-docker exec -it rydell-shard-01-node-a bash -c "echo 'rs.help()' | mongo --port 27017"
-docker exec -it rydell-shard-01-node-a bash -c "echo 'rs.status()' | mongo --port 27017" 
-docker exec -it rydell-shard-01-node-a bash -c "echo 'rs.printReplicationInfo()' | mongo --port 27017" 
-docker exec -it rydell-shard-01-node-a bash -c "echo 'rs.printSlaveReplicationInfo()' | mongo --port 27017"
+docker exec -it cbbn-shard-01-node-a bash -c "echo 'rs.help()' | mongo --port 27017"
+docker exec -it cbbn-shard-01-node-a bash -c "echo 'rs.status()' | mongo --port 27017" 
+docker exec -it cbbn-shard-01-node-a bash -c "echo 'rs.printReplicationInfo()' | mongo --port 27017" 
+docker exec -it cbbn-shard-01-node-a bash -c "echo 'rs.printSlaveReplicationInfo()' | mongo --port 27017"
 ```
 
 ---
@@ -367,7 +361,3 @@ Execute the **First Run** instructions again.
 <img src="https://raw.githubusercontent.com/minhhungit/mongodb-cluster-docker-compose/master/images/demo-02.png" style="width: 100%;" />
 <img src="https://raw.githubusercontent.com/minhhungit/mongodb-cluster-docker-compose/master/images/replicaset-shard-01.png" style="width: 100%;" />
 
----
-#### Inspired by:
-- https://github.com/jfollenfant/mongodb-sharding-docker-compose
-- https://viblo.asia/p/cai-dat-mongo-cluster-voi-docker-m68Z0NN25kG
